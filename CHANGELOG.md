@@ -2,6 +2,10 @@
 
 All notable changes to Space Explorer. Format: [Keep a Changelog](https://keepachangelog.com), versions: [SemVer](https://semver.org).
 
+## [2.0.1] - 2026-09-27
+### Fixed
+- Old quiz results no longer appear under the next answer: asking a new question closes the quiz.
+
 ## [2.0.0] - 2026-09-27
 ### Added
 - 🎤 Voice questions (Groq Whisper speech-to-text) and 🔊 "Read it to me" answers (built-in device voice).

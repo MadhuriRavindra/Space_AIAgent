@@ -306,6 +306,7 @@ prompt = typed or clicked or voice_text
 # ---------- Answer ----------
 if prompt:
     prompt = prompt.strip()[:MAX_QUESTION_CHARS]
+    ss.quiz = None  # a new question closes any old quiz (finished or not)
     ss.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar="🧑‍🚀"):
         st.markdown(("🎤 " if voice_text else "") + prompt)
