@@ -20,7 +20,18 @@ def validate_quiz(data) -> list[dict]:
     return good[:3]
 
 
-def make_quiz(pool: KeyPool, facts: str, models=None) -> list[dict]:
-    text = pool.complete([{"role": "user", "content": QUIZ_PROMPT + facts[-4000:]}],
+def build_lessons(lessons: list[tuple[str, str]], max_chars: int = 4000) -> str:
+    """Format (question, answer) pairs, newest last, keeping the newest if it's too long."""
+    blocks = []
+    for n, (q, a) in enumerate(lessons, 1):
+        tag = "MOST RECENT TOPIC" if n == len(lessons) else f"Topic {n}"
+        blocks.append(f"[{tag}]\nChild asked: {q}\nCosmo answered: {a}")
+    text = "\n\n".join(blocks)
+    return text[-max_chars:]
+
+
+def make_quiz(pool: KeyPool, lessons: list[tuple[str, str]], models=None) -> list[dict]:
+    """lessons = [(child's question, Cosmo's answer), ...] oldest first."""
+    text = pool.complete([{"role": "user", "content": QUIZ_PROMPT + build_lessons(lessons)}],
                          models or CHAT_MODELS, temperature=0.4, max_tokens=900, json_mode=True)
     return validate_quiz(extract_json(text))

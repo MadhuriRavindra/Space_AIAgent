@@ -3,9 +3,9 @@ import pytest
 from cosmo import nasa
 from cosmo.llm import KeyPool
 from cosmo.prompts import OFF_TOPIC_REPLY
-from cosmo.quiz import make_quiz, validate_quiz
+from cosmo.quiz import build_lessons, make_quiz, validate_quiz
 from cosmo.ranks import rank_for
-from cosmo.text import clean_name, for_speech, is_refusal, reading_grade
+from cosmo.text import clean_name, for_speech, is_chitchat, is_refusal, reading_grade
 
 
 # ---- NASA pictures ----
@@ -34,8 +34,16 @@ def test_parse_nasa_search_response():
 
 # ---- Quiz ----
 def test_quiz_from_fake_model(fake_groq):
-    quiz = make_quiz(KeyPool(["k1"]), "Mars is red because of rust.")
+    quiz = make_quiz(KeyPool(["k1"]), [("Why is Mars red?", "Mars is red because of rust.")])
     assert len(quiz) == 3 and quiz[0]["options"][quiz[0]["answer"]] == "Rust"
+
+
+def test_lessons_mark_most_recent_topic_and_keep_it_when_long():
+    text = build_lessons([("Saturn?", "Rings of ice."), ("Mars?", "Red rust.")])
+    assert text.index("[Topic 1]") < text.index("[MOST RECENT TOPIC]")
+    assert "Child asked: Mars?" in text.split("[MOST RECENT TOPIC]")[1]
+    long_text = build_lessons([("Old?", "x" * 5000), ("New?", "Newest fact.")], max_chars=300)
+    assert "Newest fact." in long_text and len(long_text) <= 300
 
 
 def test_bad_quiz_questions_are_dropped():
@@ -79,3 +87,12 @@ def test_reading_grade_is_lower_for_simple_text():
     hard = ("Heliophysical magnetohydrodynamic phenomena substantially complicate "
             "comprehensive characterisation of stellar atmospheric stratification.")
     assert reading_grade(simple) < 5 < reading_grade(hard)
+
+
+@pytest.mark.parametrize("text,chitchat", [
+    ("hi", True), ("Hello Cosmo!", True), ("thank you", True), ("wow cool", True),
+    ("Which planet is hottest?", False),   # 'which' contains 'hi' but is a real question
+    ("What is Pluto?", False), ("ok tell me about the moon", False), ("", False),
+])
+def test_chitchat(text, chitchat):
+    assert is_chitchat(text) is chitchat

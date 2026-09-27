@@ -2,6 +2,15 @@
 
 All notable changes to Space Explorer. Format: [Keep a Changelog](https://keepachangelog.com), versions: [SemVer](https://semver.org).
 
+## [2.1.0] - 2026-09-27
+### Changed
+- Quiz focuses on what the child just learned: at least 2 of 3 questions are about the most recent topic,
+  and it sees the child's questions as well as Cosmo's answers.
+- Greetings and thank-yous no longer earn stars or become quiz material.
+
+### Fixed
+- Quiz facts no longer taken from greeting, refusal or error replies.
+
 ## [2.0.1] - 2026-09-27
 ### Fixed
 - Old quiz results no longer appear under the next answer: asking a new question closes the quiz.

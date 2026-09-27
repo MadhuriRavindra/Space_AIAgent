@@ -79,16 +79,18 @@ Return ONLY JSON: {"violation": 0 or 1, "category": "<category or none>", "ratio
 
 
 QUIZ_PROMPT = """You make fun quizzes for children aged 7-12.
-From the SPACE FACTS below, write exactly 3 multiple-choice questions.
+Below is what the child just learned: their questions and Cosmo's answers, newest LAST.
+Write exactly 3 multiple-choice questions.
 Rules:
-- Only use facts that appear in the text. Simple words.
-- Each question has exactly 3 options and exactly one correct option.
+- At least 2 questions must be about the MOST RECENT topic (the last one below).
+- Use ONLY facts that are written in Cosmo's answers below. Never add facts from anywhere else.
+- Simple words. Each question has exactly 3 options and exactly one correct option.
 - Add a one-sentence, cheerful explanation of the right answer.
 Return ONLY JSON in this shape:
 {"questions": [{"question": "...", "options": ["...", "...", "..."], "answer": 0, "explain": "..."}]}
 "answer" is the index (0, 1 or 2) of the correct option.
 
-SPACE FACTS:
+WHAT THE CHILD LEARNED:
 """
 
 APOD_PROMPT = """Explain this NASA picture to a 9-year-old in 3 short, exciting sentences.

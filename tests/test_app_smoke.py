@@ -74,3 +74,37 @@ def test_quiz_flow_awards_stars(app):
     assert not at.exception, at.exception
     assert at.session_state.quiz["result"]["right"] == 2
     assert at.session_state.stars == 3     # 1 for the question + 2 for the quiz
+
+
+def test_new_question_closes_finished_quiz(app):
+    at = start(app)
+    at.chat_input[0].set_value("Why is Mars red?").run()
+    [b for b in at.button if "Quiz me" in b.label][0].click().run()
+    for r, v in zip(at.radio, ["Rust", "Olympus Mons", "Planet"], strict=True):
+        r.set_value(v)
+    [b for b in at.button if "Check my answers" in b.label][0].click().run()
+    assert at.session_state.quiz["result"]["right"] == 3
+    at.chat_input[0].set_value("Tell me about Saturn").run()
+    assert not at.exception, at.exception
+    assert at.session_state.quiz is None
+    assert not any("Space Quiz" in m.value for m in at.markdown)
+
+
+def test_greeting_gives_no_star_and_no_quiz(app):
+    at = start(app)
+    at.chat_input[0].set_value("hi").run()
+    assert at.session_state.stars == 0
+    assert not any("Quiz me" in b.label for b in at.button)
+
+
+def test_quiz_uses_latest_lesson(app, fake_groq, monkeypatch):
+    import cosmo.quiz
+    seen = {}
+    real = cosmo.quiz.build_lessons
+    monkeypatch.setattr(cosmo.quiz, "build_lessons", lambda lessons, **kw: seen.setdefault("l", lessons) and real(lessons))
+    at = start(app)
+    for q in ["Why is Mars red?", "hello", "Tell me about Saturn"]:
+        at.chat_input[0].set_value(q).run()
+    [b for b in at.button if "Quiz me" in b.label][0].click().run()
+    asked = [q for q, _ in seen["l"]]
+    assert asked == ["Why is Mars red?", "Tell me about Saturn"]   # greeting skipped, newest last

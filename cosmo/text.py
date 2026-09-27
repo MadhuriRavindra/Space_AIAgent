@@ -18,6 +18,16 @@ def is_refusal(answer: str) -> bool:
         "can’t answer this question as i am a space agent" in a
 
 
+_CHITCHAT = {"hi", "hello", "hey", "hii", "thanks", "thank", "thankyou", "bye", "ok", "okay", "cool",
+             "wow", "nice", "yes", "no", "cosmo", "you", "good", "morning", "night", "great"}
+
+
+def is_chitchat(text: str) -> bool:
+    """'hi', 'thank you cosmo', 'wow cool' -> True. Real questions -> False. Whole words only."""
+    words = re.findall(r"[a-z]+", (text or "").lower())
+    return bool(words) and len(words) <= 4 and all(w in _CHITCHAT for w in words)
+
+
 def is_blocked(answer: str) -> bool:
     return (answer or "").strip() == UNSAFE_REPLY
 
@@ -52,5 +62,5 @@ def reading_grade(text: str) -> float:
     return round(0.39 * len(words) / sentences + 11.8 * syl / len(words) - 15.59, 1)
 
 
-__all__ = ["clean_name", "is_refusal", "is_blocked", "for_speech", "reading_grade",
+__all__ = ["clean_name", "is_refusal", "is_blocked", "is_chitchat", "for_speech", "reading_grade",
            "OFF_TOPIC_REPLY", "UNSAFE_REPLY"]

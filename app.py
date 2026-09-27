@@ -14,7 +14,7 @@ from cosmo.llm import KeyPool
 from cosmo.prompts import APOD_PROMPT, CHAT_MODELS, WHISPER_MODELS
 from cosmo.quiz import make_quiz
 from cosmo.ranks import rank_for
-from cosmo.text import clean_name, for_speech, is_blocked, is_refusal
+from cosmo.text import clean_name, for_speech, is_blocked, is_chitchat, is_refusal
 
 MAX_QUESTION_CHARS = 300      # keeps questions short
 MAX_QUESTIONS_PER_VISIT = 40  # protects the free Groq quota when many kids use it
@@ -239,14 +239,14 @@ for i, msg in enumerate(ss.messages):
             speak_button(msg["content"])
 
 # ---------- Quiz ----------
-facts = [m["content"] for m in ss.messages
-         if m["role"] == "assistant" and not is_refusal(m["content"]) and not is_blocked(m["content"])
-         and "radio" not in m["content"]]
-if facts and ss.quiz is None:
+# Only real space answers count as lessons (not greetings, refusals, blocked or error replies)
+lessons = [(ss.messages[i - 1]["content"], m["content"]) for i, m in enumerate(ss.messages)
+           if m["role"] == "assistant" and m.get("learned") and i > 0]
+if lessons and ss.quiz is None:
     if st.button("🧠 Quiz me on what I learned! (+1 ⭐ per right answer)"):
         with st.spinner("Cosmo is making your quiz... 🧠"):
             try:
-                questions = make_quiz(pool, "\n\n".join(facts[-3:]))
+                questions = make_quiz(pool, lessons[-3:])
             except Exception as e:
                 print("Quiz failed:", e)
                 questions = []
@@ -327,7 +327,9 @@ if prompt:
             if img:
                 st.image(img["url"], width=320, caption=f"{img['title']} · Image: NASA")
                 entry["image"] = img
-            add_stars(1)
+            entry["learned"] = not is_chitchat(prompt)
+            if entry["learned"]:
+                add_stars(1)
     ss.messages.append(entry)
     st.rerun()  # redraw so rank, quiz button and history are up to date
 
