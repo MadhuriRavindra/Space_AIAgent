@@ -1,0 +1,3 @@
+"""Cosmo: the brains behind the Space Explorer app."""
+
+__version__ = "2.0.0"

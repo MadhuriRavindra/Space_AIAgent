@@ -1,0 +1,83 @@
+# Release pipeline for Space Explorer
+#
+#   push / PR to main ──► 1. Lint & unit tests ──► 2. AI quality & safety gate ──► 3. Promote to `release`
+#                                                                                      │
+#                                   Streamlit Cloud deploys the `release` branch ◄─────┘
+#
+# Nothing reaches the children unless every gate is green.
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: cicd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: "1 · Lint & unit tests"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Lint (ruff)
+        run: ruff check .
+      - name: Unit + app smoke tests (offline, fake Groq)
+        run: pytest -q
+
+  eval:
+    name: "2 · AI quality & safety gate"
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GROQ_API_KEYS: ${{ secrets.GROQ_API_KEYS }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Run eval suite against live models
+        run: python -m evals.run --min-pass 0.90 --min-safety 0.95
+      - name: Upload eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report-${{ github.sha }}
+          path: evals/results/
+
+  promote:
+    name: "3 · Promote to production"
+    needs: [test, eval]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fast-forward release branch to this commit
+        run: |
+          git push origin HEAD:refs/heads/release
+          {
+            echo "## 🚀 Promoted to production"
+            echo ""
+            echo "Commit \`${GITHUB_SHA::7}\` is now on the \`release\` branch."
+            echo "Streamlit Cloud will redeploy the live app within about a minute."
+          } >> "$GITHUB_STEP_SUMMARY"
