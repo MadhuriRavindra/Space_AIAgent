@@ -10,7 +10,8 @@ A kid-friendly space Q&A app. Streamlit UI + Groq LLM.
             ▼
  Streamlit Community Cloud (free hosting)
    └── app.py
-        ├── Passcode gate (optional)
+        ├── Welcome screen: asks the child's first name (optional)
+        ├── Space-only rule + limits (300 chars/question, 40 questions/visit)
         ├── UI: fun fact, topic buttons, chat
         ├── Session memory (last 10 messages)
         └── Kid-safe system prompt ("Cosmo")
@@ -45,6 +46,6 @@ streamlit run app.py
 6. On her tablet/phone: open the URL → browser menu → **Add to Home Screen**. It then works like an app icon.
 
 Tips:
-- Keep `APP_PASSCODE` set; the URL is public, and the passcode protects your Groq quota.
+- The app is open to anyone with the link. The per-visit limit and Groq's free tier (no card = no bill) keep costs at zero; if many kids use it at once, Groq may rate-limit briefly.
 - Free Streamlit apps sleep after inactivity; the first open may take ~30 seconds to wake.
 - If Groq retires a model, the app falls back automatically; you can also set `GROQ_MODEL` in Secrets.
